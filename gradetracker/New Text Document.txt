@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Student Grade Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1efe8;color:#0b0b0b;font-size:14px;min-height:100vh}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+
+/* Sidebar */
+.sidebar{background:#0f172a;padding:24px 16px;display:flex;flex-direction:column;gap:0}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.logo-icon{width:36px;height:36px;background:#2a78d6;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-title{font-size:16px;font-weight:500;color:#f8fafc}
+.logo-sub{font-size:11px;color:#475569;margin-bottom:28px}
+.sidebar-stat{padding:12px 10px;border-bottom:0.5px solid #1e293b;display:flex;align-items:center;gap:10px}
+.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stat-inner{flex:1}
+.stat-label{font-size:9px;font-weight:500;color:#475569;letter-spacing:.06em;text-transform:uppercase}
+.stat-val{font-size:17px;font-weight:500;color:#f1f5f9;line-height:1.2;margin-top:1px}
+.sidebar-footer{margin-top:auto;padding-top:16px;font-size:10px;color:#334155}
+
+/* Main */
+.main{padding:28px;overflow-y:auto}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:22px;font-weight:500;color:#0b0b0b}
+.btn-group{display:flex;gap:8px}
+
+/* Buttons */
+button{font-family:inherit;font-size:13px;font-weight:500;border:0.5px solid rgba(0,0,0,.15);background:#fff;color:#0b0b0b;border-radius:8px;padding:0 16px;height:36px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .12s}
+button:hover{background:#f1efe8}
+button.primary{background:#2a78d6;border-color:#2a78d6;color:#fff}
+button.primary:hover{background:#185fa5}
+button.danger{background:#e24b4a;border-color:#e24b4a;color:#fff}
+button.danger:hover{background:#a32d2d}
+
+/* Table */
+.table-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead th{font-size:11px;font-weight:500;color:#898781;text-transform:uppercase;letter-spacing:.05em;padding:12px 14px;text-align:left;background:#f1efe8;border-bottom:0.5px solid rgba(0,0,0,.08)}
+tbody tr{border-bottom:0.5px solid rgba(0,0,0,.06);cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#f7f7f5}
+tbody tr.selected{background:#e6f1fb}
+tbody tr:last-child{border-bottom:none}
+td{padding:12px 14px;font-size:13px;color:#0b0b0b;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grade-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:12px;font-weight:500}
+.status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#fff;border-radius:16px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.modal-header{padding:24px 24px 16px;border-bottom:0.5px solid rgba(0,0,0,.08);margin-bottom:20px}
+.modal-header h2{font-size:18px;font-weight:500}
+.modal-body{padding:0 24px 24px}
+.form-row{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:500;color:#52514e;margin-bottom:5px}
+input[type=text],input[type=number],select{width:100%;height:36px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;padding:0 10px;font-family:inherit;font-size:13px;color:#0b0b0b;background:#fff;outline:none;transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus{box-shadow:0 0 0 2px #2a78d620;border-color:#2a78d6}
+.subjects-grid{display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:center;margin-bottom:8px}
+.subjects-header{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:4px}
+.subjects-header span{font-size:11px;font-weight:500;color:#898781;text-transform:uppercase;letter-spacing:.05em}
+.modal-footer{padding:16px 24px;border-top:0.5px solid rgba(0,0,0,.08);display:flex;justify-content:flex-end;gap:8px;background:#f7f7f5;border-radius:0 0 16px 16px}
+.count-select-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.count-select-row label{margin:0}
+.count-select-row select{width:80px}
+
+/* Report Modal */
+.report-modal{width:700px}
+.report-header{background:#2a78d6;padding:24px;border-radius:16px 16px 0 0;color:#fff}
+.report-name{font-size:20px;font-weight:500;margin-bottom:4px}
+.report-meta{font-size:13px;opacity:.8}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px 24px}
+.stat-card{background:#f1efe8;border-radius:10px;padding:14px 16px}
+.stat-card-label{font-size:10px;font-weight:500;color:#898781;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.stat-card-val{font-size:22px;font-weight:500}
+.chart-section{padding:0 24px 20px}
+.chart-title{font-size:13px;font-weight:500;color:#52514e;margin-bottom:12px}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:140px;padding-bottom:20px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar-container{flex:1;display:flex;align-items:flex-end;width:100%}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:opacity .15s}
+.bar:hover{opacity:.8}
+.bar-score{font-size:10px;font-weight:500;color:#52514e;text-align:center;margin-bottom:2px}
+.bar-label{font-size:10px;color:#898781;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.breakdown-section{padding:0 24px 24px}
+.breakdown-section table{border:0.5px solid rgba(0,0,0,.1);border-radius:10px;overflow:hidden;width:100%}
+
+/* Empty state */
+.empty-state{padding:60px 24px;text-align:center;color:#898781}
+.empty-title{font-size:16px;font-weight:500;color:#52514e;margin-bottom:6px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#0f172a;color:#f1f5f9;padding:12px 18px;border-radius:10px;font-size:13px;z-index:200;animation:fadeInUp .2s ease;pointer-events:none}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:700px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .report-modal,.modal{width:98vw}
+  .stats-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-8"/>
+        </svg>
+      </div>
+      <span class="logo-title">GradeTracker</span>
+    </div>
+    <div class="logo-sub">Student analytics</div>
+
+    <div class="sidebar-stat">
+      <div class="stat-dot" style="background:#2a78d6"></div>
+      <div class="stat-inner">
+        <div class="stat-label">Class average</div>
+        <div class="stat-val" id="sb-avg">—</div>
+      </div>
+    </div>
+    <div class="sidebar-stat">
+      <div class="stat-dot" style="background:#1baf7a"></div>
+      <div class="stat-inner">
+        <div class="stat-label">Top student</div>
+        <div class="stat-val" id="sb-top" style="font-size:13px;margin-top:3px">—</div>
+      </div>
+    </div>
+    <div class="sidebar-stat">
+      <div class="stat-dot" style="background:#eda100"></div>
+      <div class="stat-inner">
+        <div class="stat-label">Passing</div>
+        <div class="stat-val" id="sb-pass">—</div>
+      </div>
+    </div>
+    <div class="sidebar-stat">
+      <div class="stat-dot" style="background:#4a3aa7"></div>
+      <div class="stat-inner">
+        <div class="stat-label">Total students</div>
+        <div class="stat-val" id="sb-total">0</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">v1.0 · Web Edition</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="toolbar">
+      <h1 class="page-title">Student roster</h1>
+      <div class="btn-group">
+        <button onclick="openReport()" aria-label="View report for selected student">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          View report
+        </button>
+        <button class="danger" onclick="removeStudent()" aria-label="Remove selected student">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Remove
+        </button>
+        <button class="primary" onclick="openAddModal()" aria-label="Add new student">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add student
+        </button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table aria-label="Student roster">
+        <thead>
+          <tr>
+            <th style="width:80px">ID</th>
+            <th style="width:170px">Name</th>
+            <th style="width:75px">Subjects</th>
+            <th style="width:100px">Average</th>
+            <th style="width:90px">Highest</th>
+            <th style="width:90px">Lowest</th>
+            <th style="width:70px">Grade</th>
+            <th style="width:85px">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none" role="status">
+        <div class="empty-title">No students yet</div>
+        <div>Add a student to get started.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Add Student Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="add-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="add-modal-title" onclick="closeAddIfBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="add-modal-title">Add new student</h2>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label for="f-name">Full name</label>
+        <input type="text" id="f-name" placeholder="Alice Johnson" autocomplete="off" />
+      </div>
+      <div class="form-row">
+        <label for="f-id">Student ID</label>
+        <input type="text" id="f-id" placeholder="STU007" autocomplete="off" />
+      </div>
+      <div class="count-select-row">
+        <label for="f-count">Number of subjects</label>
+        <select id="f-count" onchange="buildSubjectFields()">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+      <div class="subjects-header">
+        <span>Subject name</span>
+        <span>Score (0–100)</span>
+      </div>
+      <div id="subject-fields"></div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeAddModal()">Cancel</button>
+      <button class="primary" onclick="submitAdd()">Add student</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Report Modal ───────────────────────────────────────────── -->
+<div class="modal-overlay" id="report-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Student report" onclick="closeReportIfBg(event)">
+  <div class="modal report-modal">
+    <div id="report-content"></div>
+    <div class="modal-footer">
+      <button onclick="closeReportModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast" style="display:none" role="status" aria-live="polite"></div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const DEFAULT_SUBJECTS = ['Mathematics','Science','English','History','Geography','Physics','Chemistry','Biology'];
+const BAR_COLORS = ['#2a78d6','#1baf7a','#eda100','#4a3aa7','#e87ba4','#eb6834','#e34948','#1baf7a'];
+
+let students = [];
+let selectedId = null;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+function maximum(arr) { return Math.max(...arr); }
+function minimum(arr) { return Math.min(...arr); }
+
+function letterGrade(a) {
+  if (a >= 90) return 'A';
+  if (a >= 80) return 'B';
+  if (a >= 70) return 'C';
+  if (a >= 60) return 'D';
+  return 'F';
+}
+
+function gradeColor(g) {
+  return { A: '#2a78d6', B: '#1baf7a', C: '#eda100', D: '#eb6834', F: '#e34948' }[g] || '#898781';
+}
+
+// ── Sample Data ───────────────────────────────────────────────────────────────
+function loadSample() {
+  const s = ['Mathematics', 'Science', 'English', 'History'];
+  students = [
+    { id: 'STU001', name: 'Alice Johnson',   subjects: s, scores: [92, 88, 95, 91] },
+    { id: 'STU002', name: 'Bob Martinez',    subjects: s, scores: [75, 82, 68, 77] },
+    { id: 'STU003', name: 'Carol White',     subjects: s, scores: [55, 60, 58, 62] },
+    { id: 'STU004', name: 'David Lee',       subjects: s, scores: [98, 95, 97, 99] },
+    { id: 'STU005', name: 'Emma Thompson',   subjects: s, scores: [83, 79, 86, 81] },
+    { id: 'STU006', name: 'Frank Wilson',    subjects: s, scores: [45, 52, 48, 50] },
+  ];
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+function refreshTable() {
+  const tbody = document.getElementById('tbody');
+  const emptyState = document.getElementById('empty-state');
+  tbody.innerHTML = '';
+
+  if (!students.length) {
+    emptyState.style.display = 'block';
+    refreshStats();
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  students.forEach(s => {
+    const a = avg(s.scores);
+    const h = maximum(s.scores);
+    const l = minimum(s.scores);
+    const g = letterGrade(a);
+    const pass = a >= 60;
+    const gc = gradeColor(g);
+
+    const tr = document.createElement('tr');
+    if (s.id === selectedId) tr.classList.add('selected');
+    tr.setAttribute('tabindex', '0');
+    tr.setAttribute('aria-label', s.name + ', average ' + a.toFixed(1) + '%, ' + (pass ? 'passing' : 'failing'));
+    tr.onclick = () => selectStudent(s.id);
+    tr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') selectStudent(s.id); };
+
+    tr.innerHTML = `
+      <td style="color:#898781;font-size:12px">${escHtml(s.id)}</td>
+      <td style="font-weight:500">${escHtml(s.name)}</td>
+      <td style="color:#898781">${s.scores.length}</td>
+      <td><span style="font-weight:500;color:#2a78d6">${a.toFixed(1)}%</span></td>
+      <td style="color:#1baf7a">${h.toFixed(1)}%</td>
+      <td style="color:#e34948">${l.toFixed(1)}%</td>
+      <td><span class="grade-badge" style="background:${gc}20;color:${gc}">${g}</span></td>
+      <td><span class="status-badge" style="background:${pass ? '#eaf3de' : '#fcebeb'};color:${pass ? '#3b6d11' : '#a32d2d'}">${pass ? 'Pass' : 'Fail'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  refreshStats();
+}
+
+function selectStudent(id) {
+  selectedId = (selectedId === id) ? null : id;
+  refreshTable();
+}
+
+// ── Sidebar Stats ─────────────────────────────────────────────────────────────
+function refreshStats() {
+  const n = students.length;
+  document.getElementById('sb-total').textContent = n;
+  if (!n) {
+    ['sb-avg', 'sb-top', 'sb-pass'].forEach(x => document.getElementById(x).textContent = '—');
+    return;
+  }
+  const avgs = students.map(s => avg(s.scores));
+  const classAvg = avg(avgs);
+  const top = students[avgs.indexOf(Math.max(...avgs))];
+  const passing = students.filter(s => avg(s.scores) >= 60).length;
+  document.getElementById('sb-avg').textContent = classAvg.toFixed(1) + '%';
+  document.getElementById('sb-top').textContent = top.name.split(' ')[0];
+  document.getElementById('sb-pass').textContent = passing + ' / ' + n;
+}
+
+// ── Add Modal ─────────────────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-id').value = '';
+  document.getElementById('f-count').value = '4';
+  buildSubjectFields();
+  document.getElementById('add-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('f-name').focus(), 50);
+}
+
+function closeAddModal() { document.getElementById('add-modal').style.display = 'none'; }
+function closeAddIfBg(e) { if (e.target === document.getElementById('add-modal')) closeAddModal(); }
+
+function buildSubjectFields() {
+  const n = parseInt(document.getElementById('f-count').value);
+  const container = document.getElementById('subject-fields');
+  container.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const def = DEFAULT_SUBJECTS[i] || ('Subject ' + (i + 1));
+    const row = document.createElement('div');
+    row.className = 'subjects-grid';
+    row.innerHTML = `
+      <input type="text" id="sn-${i}" value="${escHtml(def)}" placeholder="Subject name" aria-label="Subject ${i+1} name" />
+      <input type="number" id="sc-${i}" placeholder="e.g. 85" min="0" max="100" step="0.1" aria-label="Subject ${i+1} score" />
+    `;
+    container.appendChild(row);
+  }
+}
+
+function submitAdd() {
+  const name = document.getElementById('f-name').value.trim();
+  const id = document.getElementById('f-id').value.trim().toUpperCase();
+  if (!name || !id) { showToast('Name and ID are required.'); return; }
+  if (students.find(s => s.id === id)) { showToast('Student ID already exists.'); return; }
+
+  const n = parseInt(document.getElementById('f-count').value);
+  const scores = [], subjects = [];
+  for (let i = 0; i < n; i++) {
+    const sn = document.getElementById('sn-' + i).value.trim() || ('Subject ' + (i + 1));
+    const sv = parseFloat(document.getElementById('sc-' + i).value);
+    if (isNaN(sv) || sv < 0 || sv > 100) { showToast('Score for "' + sn + '" must be 0–100.'); return; }
+    subjects.push(sn);
+    scores.push(sv);
+  }
+
+  students.push({ id, name, subjects, scores });
+  closeAddModal();
+  selectedId = id;
+  refreshTable();
+  showToast(name + ' added to the roster.');
+}
+
+// ── Remove ────────────────────────────────────────────────────────────────────
+function removeStudent() {
+  if (!selectedId) { showToast('Select a student first.'); return; }
+  const s = students.find(x => x.id === selectedId);
+  if (!s) return;
+  if (!confirm('Remove ' + s.name + ' from the roster?')) return;
+  students = students.filter(x => x.id !== selectedId);
+  selectedId = null;
+  refreshTable();
+  showToast('Student removed.');
+}
+
+// ── Report Modal ──────────────────────────────────────────────────────────────
+function openReport() {
+  if (!selectedId) { showToast('Select a student to view their report.'); return; }
+  const s = students.find(x => x.id === selectedId);
+  if (!s) return;
+
+  const a = avg(s.scores);
+  const h = maximum(s.scores);
+  const l = minimum(s.scores);
+  const g = letterGrade(a);
+  const pass = a >= 60;
+
+  // Bar chart
+  const bars = s.scores.map((sc, i) => {
+    const pct = (sc / 100) * 100;
+    return `
+      <div class="bar-wrap">
+        <div class="bar-score">${sc.toFixed(0)}</div>
+        <div class="bar-container">
+          <div class="bar" style="height:${pct}%;background:${BAR_COLORS[i % BAR_COLORS.length]}"></div>
+        </div>
+        <div class="bar-label">${escHtml(s.subjects[i] || 'S' + (i+1))}</div>
+      </div>`;
+  }).join('');
+
+  // Breakdown rows
+  const rows = s.scores.map((sc, i) => {
+    const lg = letterGrade(sc);
+    const lc = gradeColor(lg);
+    return `<tr>
+      <td>${escHtml(s.subjects[i] || 'S' + (i+1))}</td>
+      <td style="font-weight:500">${sc.toFixed(1)}</td>
+      <td><span class="grade-badge" style="background:${lc}20;color:${lc}">${lg}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('report-content').innerHTML = `
+    <div class="report-header">
+      <div class="report-name">${escHtml(s.name)}</div>
+      <div class="report-meta">
+        ID: ${escHtml(s.id)} &nbsp;·&nbsp; Letter grade: ${g}
+        &nbsp;·&nbsp;
+        <span style="background:${pass ? '#16a34a30' : '#dc262630'};padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500">
+          ${pass ? 'Pass' : 'Fail'}
+        </span>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-card-label">Average</div>
+        <div class="stat-card-val" style="color:#2a78d6">${a.toFixed(2)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Highest score</div>
+        <div class="stat-card-val" style="color:#1baf7a">${h.toFixed(2)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Lowest score</div>
+        <div class="stat-card-val" style="color:#e34948">${l.toFixed(2)}%</div>
+      </div>
+    </div>
+    <div class="chart-section">
+      <div class="chart-title">Score by subject</div>
+      <div class="bar-chart">${bars}</div>
+    </div>
+    <div class="breakdown-section">
+      <div class="chart-title" style="margin-bottom:8px">Subject breakdown</div>
+      <table aria-label="Subject scores for ${escHtml(s.name)}">
+        <thead><tr><th>Subject</th><th>Score</th><th>Grade</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById('report-modal').style.display = 'flex';
+  document.getElementById('report-modal').focus();
+}
+
+function closeReportModal() { document.getElementById('report-modal').style.display = 'none'; }
+function closeReportIfBg(e) { if (e.target === document.getElementById('report-modal')) closeReportModal(); }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.style.display = 'none', 2800);
+}
+
+// ── Escape HTML ───────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Keyboard close modals ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('report-modal').style.display !== 'none') closeReportModal();
+    else if (document.getElementById('add-modal').style.display !== 'none') closeAddModal();
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadSample();
+refreshTable();
+buildSubjectFields();
+</script>
+</body>
+</html>
